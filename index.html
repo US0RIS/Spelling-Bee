@@ -757,7 +757,7 @@
 
     <p class="footer-note">
       Definitions provided live by <a href="https://dictionaryapi.dev" style="color:#b8a77a;">dictionaryapi.dev</a>.
-      Voice provided by your browser. Use headphones for the full effect.
+      Voice provided by Puter.js. Use headphones for the full effect.
     </p>
   </div>
 
@@ -899,6 +899,9 @@
 
 </div>
 
+<!-- Puter.js powers text-to-speech -->
+<script src="https://js.puter.com/v2/"></script>
+
 <!-- Word list data — loaded from external file -->
 <script src="words.js"></script>
 
@@ -1000,7 +1003,10 @@ let state = {
   results: [],
   currentWord: null,
   currentDef: null,
-  voice: null,
+  voice: 'Joanna',
+  ttsEngine: 'neural',
+  currentAudio: null,
+  ttsRequestId: 0,
   rate: 1.0,
   showLetters: true,
   wordsPerRound: 15,
@@ -1045,7 +1051,7 @@ function showScreen(id) {
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 function goHome() {
-  if (window.speechSynthesis) speechSynthesis.cancel();
+  stopSpeech();
   showScreen('screen-home');
 }
 
@@ -1245,40 +1251,86 @@ function previewWord(w) {
 }
 
 // =============================================================
-// VOICES
+// PUTER TEXT-TO-SPEECH
 // =============================================================
+const PUTER_VOICES = [
+  { id: 'Joanna', label: 'Joanna — clear US voice' },
+  { id: 'Matthew', label: 'Matthew — clear US voice' },
+  { id: 'Ivy', label: 'Ivy — younger US voice' },
+  { id: 'Kendra', label: 'Kendra — clear US voice' },
+  { id: 'Salli', label: 'Salli — clear US voice' },
+  { id: 'Kimberly', label: 'Kimberly — clear US voice' },
+  { id: 'Amy', label: 'Amy — UK voice' },
+  { id: 'Brian', label: 'Brian — UK voice' },
+  { id: 'Emma', label: 'Emma — UK voice' },
+];
+
+function stopSpeech() {
+  state.ttsRequestId++;
+  if (state.currentAudio) {
+    try {
+      state.currentAudio.pause();
+      state.currentAudio.currentTime = 0;
+    } catch (e) {}
+    state.currentAudio = null;
+  }
+}
+
+async function speakText(text, opts = {}) {
+  if (!text || !window.puter || !puter.ai || !puter.ai.txt2speech) return;
+
+  const requestId = ++state.ttsRequestId;
+  const slow = Boolean(opts.slow);
+  const rate = opts.rate != null ? opts.rate : (slow ? Math.max(0.55, state.rate - 0.35) : state.rate);
+
+  stopSpeech();
+
+  try {
+    const audio = await puter.ai.txt2speech(text, {
+      voice: state.voice || 'Joanna',
+      engine: state.ttsEngine || 'neural',
+      language: 'en-US'
+    });
+
+    if (requestId !== state.ttsRequestId) return;
+    state.currentAudio = audio;
+    if ('playbackRate' in audio) audio.playbackRate = rate;
+    await audio.play();
+  } catch (error) {
+    console.error('Puter TTS error:', error);
+    // If a selected voice is unavailable, retry once with the documented example voice.
+    if (state.voice !== 'Joanna') {
+      const oldVoice = state.voice;
+      state.voice = 'Joanna';
+      try {
+        const audio = await puter.ai.txt2speech(text, { voice: 'Joanna', engine: state.ttsEngine || 'neural', language: 'en-US' });
+        if (requestId !== state.ttsRequestId) return;
+        state.currentAudio = audio;
+        if ('playbackRate' in audio) audio.playbackRate = rate;
+        await audio.play();
+      } catch (fallbackError) {
+        console.error('Puter TTS fallback error:', fallbackError);
+        state.voice = oldVoice;
+      }
+    }
+  }
+}
+
 function initVoices() {
-  if (!window.speechSynthesis) {
-    document.getElementById('voice-select').innerHTML = '<option>not supported</option>';
-    return;
+  const sel = document.getElementById('voice-select');
+  sel.innerHTML = '';
+
+  for (const voice of PUTER_VOICES) {
+    const o = document.createElement('option');
+    o.value = voice.id;
+    o.textContent = voice.label;
+    sel.appendChild(o);
   }
-  function populate() {
-    const voices = speechSynthesis.getVoices().filter(v => v.lang.startsWith('en'));
-    const sel = document.getElementById('voice-select');
-    sel.innerHTML = '';
-    if (voices.length === 0) {
-      sel.innerHTML = '<option value="">(default)</option>';
-      return;
-    }
-    voices.forEach(v => {
-      const o = document.createElement('option');
-      o.value = v.name;
-      o.textContent = `${v.name} (${v.lang})`;
-      sel.appendChild(o);
-    });
-    const preferred = voices.find(v => /natural|enhanced|premium|google|samantha|daniel/i.test(v.name))
-                   || voices.find(v => v.default)
-                   || voices[0];
-    if (preferred) {
-      sel.value = preferred.name;
-      state.voice = preferred;
-    }
-    sel.addEventListener('change', () => {
-      state.voice = voices.find(v => v.name === sel.value) || null;
-    });
-  }
-  populate();
-  speechSynthesis.onvoiceschanged = populate;
+
+  sel.value = state.voice || 'Joanna';
+  sel.addEventListener('change', () => {
+    state.voice = sel.value || 'Joanna';
+  });
 }
 
 function openSettings()  { document.getElementById('settings-modal').classList.remove('hidden'); }
@@ -1287,35 +1339,23 @@ function closeSettings() { document.getElementById('settings-modal').classList.a
 // =============================================================
 // SPEECH
 // =============================================================
+function previewWord(w) {
+  speakText(w);
+}
+
 function speakWord(slow = false) {
-  if (!state.currentWord || !window.speechSynthesis) return;
-  speechSynthesis.cancel();
-  const u = new SpeechSynthesisUtterance(state.currentWord);
-  if (state.voice) u.voice = state.voice;
-  u.rate = slow ? Math.max(0.55, state.rate - 0.35) : state.rate;
-  u.pitch = 1.0;
-  u.volume = 1.0;
-  speechSynthesis.speak(u);
+  if (!state.currentWord) return;
+  speakText(state.currentWord, { slow });
 }
 
 function speakLetters() {
-  // Spells the word out letter-by-letter. Helpful for the very hard ones.
-  if (!state.currentWord || !window.speechSynthesis) return;
-  speechSynthesis.cancel();
-  // We don't want to GIVE AWAY the spelling — only speak the word slowly with pauses,
-  // or speak each syllable. Instead, use the example sentence if available.
+  // This button intentionally does not spell the answer aloud.
+  // It repeats the word in a sentence/context instead.
+  if (!state.currentWord) return;
   if (state.currentDef && state.currentDef.example) {
-    const u = new SpeechSynthesisUtterance(state.currentDef.example);
-    if (state.voice) u.voice = state.voice;
-    u.rate = Math.max(0.7, state.rate - 0.2);
-    speechSynthesis.speak(u);
+    speakText(state.currentDef.example, { rate: Math.max(0.7, state.rate - 0.2) });
   } else {
-    // No example — say "use it in a sentence: <word>, the speller heard <word>."
-    const sentence = `${state.currentWord}. The word is ${state.currentWord}.`;
-    const u = new SpeechSynthesisUtterance(sentence);
-    if (state.voice) u.voice = state.voice;
-    u.rate = Math.max(0.7, state.rate - 0.2);
-    speechSynthesis.speak(u);
+    speakText(`${state.currentWord}. The word is ${state.currentWord}.`, { rate: Math.max(0.7, state.rate - 0.2) });
   }
 }
 
