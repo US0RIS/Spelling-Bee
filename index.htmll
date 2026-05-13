@@ -1,0 +1,1790 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chalkboard Spelling Bee</title>
+<link href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;700&display=swap" rel="stylesheet">
+<style>
+  /* ========= BASE ========= */
+  *, *::before, *::after { box-sizing: border-box; }
+  html, body {
+    margin: 0; padding: 0;
+    width: 100%; min-height: 100vh;
+    font-family: 'Georgia', 'Times New Roman', serif;
+    background: #1a1410; color: #e8dcc4;
+    overflow-x: hidden;
+  }
+  body {
+    background: radial-gradient(ellipse at top, #2a1f17 0%, #1a1410 60%, #0d0907 100%);
+    background-attachment: fixed;
+  }
+  button { font-family: inherit; cursor: pointer; }
+  input, select { font-family: inherit; }
+
+  .room {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 28px 24px 60px;
+    position: relative;
+  }
+  h1.brand {
+    font-family: 'Georgia', serif;
+    font-size: 42px;
+    text-align: center;
+    margin: 8px 0 4px;
+    color: #f0d77a;
+    letter-spacing: 2px;
+    text-shadow: 0 2px 0 #6b4a1a, 0 4px 8px rgba(0,0,0,0.6);
+  }
+  .subtitle {
+    text-align: center;
+    font-style: italic;
+    color: #b8a77a;
+    margin: 0 0 24px;
+    letter-spacing: 1px;
+  }
+
+  /* ========= CHALKBOARD ========= */
+  .blackboard-wrap {
+    position: relative;
+    margin: 0 auto;
+    padding: 22px;
+    background: linear-gradient(180deg, #6b4a25 0%, #4a3018 50%, #6b4a25 100%);
+    border-radius: 10px;
+    box-shadow:
+      0 0 0 3px #2a1a08,
+      0 20px 40px rgba(0,0,0,0.7),
+      inset 0 0 30px rgba(0,0,0,0.4);
+  }
+  .blackboard-wrap::before {
+    content: ''; position: absolute; inset: 8px;
+    border: 2px solid #2a1a08;
+    border-radius: 4px;
+    pointer-events: none;
+  }
+  .blackboard {
+    position: relative;
+    width: 100%;
+    min-height: 360px;
+    background:
+      radial-gradient(ellipse at 30% 40%, #2a4a35 0%, #1a3525 60%, #0f2418 100%);
+    border-radius: 4px;
+    overflow: hidden;
+    padding: 30px 36px;
+    background-image:
+      radial-gradient(ellipse at 30% 40%, #2a4a35 0%, #1a3525 60%, #0f2418 100%),
+      url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='200' height='200'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/><feColorMatrix values='0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 0.08 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+  }
+  .blackboard::after {
+    content: '';
+    position: absolute; inset: 0;
+    pointer-events: none;
+    background:
+      radial-gradient(ellipse 200px 60px at 15% 20%, rgba(255,255,255,0.04), transparent 70%),
+      radial-gradient(ellipse 280px 50px at 80% 75%, rgba(255,255,255,0.05), transparent 70%),
+      radial-gradient(ellipse 150px 40px at 60% 30%, rgba(255,255,255,0.03), transparent 70%);
+  }
+  .chalk-tray {
+    height: 22px;
+    margin-top: -2px;
+    background: linear-gradient(180deg, #5a3a18 0%, #3a2510 100%);
+    border-radius: 0 0 8px 8px;
+    box-shadow: inset 0 2px 4px rgba(0,0,0,0.5);
+    position: relative;
+    display: flex;
+    align-items: center;
+    padding: 0 30px;
+    gap: 10px;
+  }
+  .chalk-stick { width: 28px; height: 6px; background: #f5f1e6; border-radius: 2px; box-shadow: 0 1px 2px rgba(0,0,0,0.4); }
+  .chalk-stick.yellow { background: #f5e08a; }
+  .chalk-stick.pink   { background: #f5c8d0; }
+  .eraser {
+    width: 50px; height: 14px;
+    background: linear-gradient(180deg, #b85540 0%, #8a3a28 100%);
+    border-radius: 2px;
+    margin-left: auto;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.4);
+  }
+
+  /* ========= CHALK TEXT ========= */
+  .chalk {
+    font-family: 'Caveat', 'Marker Felt', 'Comic Sans MS', cursive;
+    color: #f5f1e6;
+    text-shadow: 0 0 1px rgba(245,241,230,0.4), 0 0 3px rgba(245,241,230,0.2);
+    letter-spacing: 1px;
+  }
+  .chalk-yellow { color: #f5e08a; text-shadow: 0 0 1px rgba(245,224,138,0.4), 0 0 3px rgba(245,224,138,0.2); }
+  .chalk-pink   { color: #f5c8d0; text-shadow: 0 0 1px rgba(245,200,208,0.4), 0 0 3px rgba(245,200,208,0.2); }
+  .chalk-cyan   { color: #b8e8e0; text-shadow: 0 0 1px rgba(184,232,224,0.4), 0 0 3px rgba(184,232,224,0.2); }
+
+  /* ========= HOME ========= */
+  .home-header { text-align: center; margin-bottom: 12px; }
+  .home-tagline { font-size: 26px; line-height: 1.4; }
+  .word-count-line {
+    text-align: center;
+    margin: 14px 0 0;
+    font-family: 'Caveat', cursive;
+    font-size: 20px;
+    color: #b8e8e0;
+  }
+  .menu-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 16px;
+    margin: 24px 0 8px;
+  }
+  .menu-btn {
+    background: rgba(15, 36, 24, 0.6);
+    border: 2px dashed rgba(245,241,230,0.4);
+    border-radius: 8px;
+    padding: 18px;
+    color: #f5f1e6;
+    font-size: 22px;
+    text-align: center;
+    transition: all 0.15s;
+    font-family: 'Caveat', 'Marker Felt', cursive;
+  }
+  .menu-btn:hover { background: rgba(40, 70, 50, 0.7); border-color: #f5e08a; transform: translateY(-2px); }
+  .menu-btn .difficulty-tag {
+    display: block;
+    font-size: 14px;
+    color: #b8a77a;
+    margin-top: 4px;
+    font-family: Georgia, serif;
+  }
+  .menu-btn .count-tag {
+    display: block;
+    font-size: 12px;
+    color: #6f8a78;
+    margin-top: 2px;
+    font-family: Georgia, serif;
+    font-style: italic;
+  }
+
+  /* ========= WORD LIST ========= */
+  .word-list-section { margin-top: 30px; }
+  .word-list-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-bottom: 14px;
+    padding-bottom: 10px;
+    border-bottom: 1px dashed rgba(245,241,230,0.3);
+  }
+  .word-list-header h2 {
+    margin: 0;
+    font-size: 28px;
+    font-family: 'Caveat', cursive;
+    color: #f5e08a;
+  }
+  .filter-row {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+  .filter-pill {
+    background: rgba(20,40,28,0.5);
+    border: 1px solid rgba(245,241,230,0.3);
+    color: #e8dcc4;
+    padding: 5px 12px;
+    border-radius: 14px;
+    font-size: 13px;
+    transition: all 0.12s;
+  }
+  .filter-pill:hover { background: rgba(40,70,50,0.7); }
+  .filter-pill.active {
+    background: #f5e08a;
+    color: #1a1410;
+    border-color: #f5e08a;
+    font-weight: bold;
+  }
+  .word-search {
+    background: rgba(15,36,24,0.6);
+    border: 1px solid rgba(245,241,230,0.3);
+    color: #f5f1e6;
+    padding: 6px 12px;
+    border-radius: 14px;
+    font-size: 14px;
+    width: 180px;
+  }
+  .word-search::placeholder { color: rgba(245,241,230,0.4); }
+
+  .word-list-count {
+    text-align: center;
+    color: #8a7a5a;
+    font-style: italic;
+    margin: 4px 0 12px;
+    font-size: 14px;
+  }
+  .word-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 8px;
+    min-height: 200px;
+  }
+  .word-card {
+    background: rgba(15,36,24,0.4);
+    border: 1px solid rgba(245,241,230,0.15);
+    border-radius: 6px;
+    padding: 10px 12px;
+    cursor: pointer;
+    transition: background 0.12s;
+  }
+  .word-card:hover { background: rgba(30,55,40,0.6); }
+  .word-card-top { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+  .word-card-word { font-family: 'Caveat', cursive; font-size: 22px; color: #f5f1e6; }
+  .word-card-rank {
+    font-size: 13px;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-weight: bold;
+    color: #1a1410;
+    white-space: nowrap;
+  }
+  .rank-1 { background: #8ed987; }
+  .rank-2 { background: #c4d987; }
+  .rank-3 { background: #e8d076; }
+  .rank-4 { background: #e8a460; }
+  .rank-5 { background: #d9645a; }
+  .rank-6 { background: linear-gradient(45deg, #a855f7, #d9645a); color: #fff; }
+  .rank-7 { background: linear-gradient(45deg, #000, #a855f7); color: #fff; animation: pulseGlow 2s infinite; }
+  @keyframes pulseGlow {
+    0%, 100% { box-shadow: 0 0 4px rgba(168, 85, 247, 0.6); }
+    50%      { box-shadow: 0 0 12px rgba(168, 85, 247, 1); }
+  }
+  .show-only-badge {
+    background: #1a1410;
+    color: #b8a77a;
+    border: 1px dashed #6b5a3a;
+    font-size: 11px;
+    padding: 2px 6px;
+    border-radius: 8px;
+    margin-left: 6px;
+    font-style: italic;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+  .word-card-def {
+    display: none;
+    margin-top: 8px;
+    padding-top: 8px;
+    border-top: 1px dashed rgba(245,241,230,0.2);
+    font-size: 14px;
+    color: #c8baa0;
+    line-height: 1.4;
+    font-style: italic;
+  }
+  .word-card.expanded .word-card-def { display: block; }
+  .word-card-def .pos { font-style: normal; color: #f5e08a; font-size: 12px; text-transform: uppercase; letter-spacing: 1px; margin-right: 6px; }
+  .word-card-def .play-mini {
+    display: inline-block;
+    margin-top: 6px;
+    background: rgba(245,224,138,0.15);
+    border: 1px dashed rgba(245,224,138,0.5);
+    color: #f5e08a;
+    padding: 3px 10px;
+    border-radius: 12px;
+    font-size: 12px;
+    cursor: pointer;
+    font-style: normal;
+  }
+  .word-card-def .play-mini:hover { background: rgba(245,224,138,0.3); }
+  .pagination-row {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 12px;
+    margin: 20px 0 0;
+    font-size: 14px;
+    color: #b8a77a;
+  }
+  .pagination-row button {
+    background: rgba(15,36,24,0.6);
+    border: 1px solid rgba(245,241,230,0.3);
+    color: #f5f1e6;
+    padding: 6px 14px;
+    border-radius: 6px;
+    transition: all 0.12s;
+  }
+  .pagination-row button:hover:not(:disabled) { background: rgba(40,70,50,0.7); border-color: #f5e08a; }
+  .pagination-row button:disabled { opacity: 0.3; cursor: not-allowed; }
+
+  /* ========= GAME SCREEN ========= */
+  .game-info-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+    flex-wrap: wrap;
+    gap: 10px;
+    padding: 0 4px;
+  }
+  .game-meta {
+    display: flex;
+    gap: 16px;
+    font-family: 'Caveat', cursive;
+    font-size: 22px;
+    color: #f5e08a;
+  }
+  .game-meta span { color: #f5f1e6; }
+  .icon-btn {
+    background: rgba(15,36,24,0.6);
+    border: 1px solid rgba(245,241,230,0.3);
+    color: #f5f1e6;
+    width: 36px; height: 36px;
+    border-radius: 50%;
+    font-size: 18px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.12s;
+  }
+  .icon-btn:hover { background: rgba(40,70,50,0.7); }
+
+  .board-content { display: flex; flex-direction: column; height: 100%; min-height: 360px; }
+
+  .difficulty-badge-row {
+    display: flex;
+    justify-content: flex-end;
+    margin-bottom: 4px;
+  }
+  .difficulty-badge {
+    font-family: Georgia, serif;
+    font-size: 12px;
+    color: #1a1410;
+    padding: 3px 14px;
+    border-radius: 12px;
+    font-weight: bold;
+    letter-spacing: 1px;
+    white-space: nowrap;
+  }
+
+  .definition-line {
+    font-size: 18px;
+    line-height: 1.5;
+    margin-bottom: 14px;
+    min-height: 80px;
+  }
+  .definition-line .pos {
+    font-family: Georgia, serif;
+    color: #f5e08a;
+    font-size: 14px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-right: 8px;
+    font-style: normal;
+  }
+  .definition-line .label {
+    font-family: Georgia, serif;
+    color: #b8a77a;
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    display: block;
+    margin-bottom: 4px;
+  }
+  .definition-line .example {
+    display: block;
+    margin-top: 6px;
+    font-size: 16px;
+    color: #b8e8e0;
+    font-style: italic;
+  }
+
+  .word-display {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    gap: 14px;
+  }
+  .typed-chalk {
+    font-size: 72px;
+    letter-spacing: 8px;
+    text-align: center;
+    min-height: 90px;
+    padding: 0 10px;
+    word-break: break-all;
+    line-height: 1.05;
+    transition: font-size 0.15s ease;
+  }
+  /* progressively smaller for longer words */
+  .typed-chalk.size-md { font-size: 56px; letter-spacing: 5px; }
+  .typed-chalk.size-sm { font-size: 42px; letter-spacing: 3px; line-height: 1.1; min-height: 110px; }
+  .typed-chalk.size-xs { font-size: 32px; letter-spacing: 2px; line-height: 1.15; min-height: 130px; }
+  .typed-chalk.size-xxs { font-size: 24px; letter-spacing: 1px; line-height: 1.2; min-height: 150px; }
+  .typed-chalk.size-tiny { font-size: 18px; letter-spacing: 0.5px; line-height: 1.25; min-height: 160px; word-break: break-all; }
+  .typed-chalk .cursor {
+    display: inline-block;
+    width: 3px;
+    height: 0.85em;
+    background: #f5f1e6;
+    vertical-align: middle;
+    margin-left: 4px;
+    animation: blink 1s infinite;
+  }
+  @keyframes blink { 0%, 49% { opacity: 1; } 50%, 100% { opacity: 0; } }
+
+  .speak-row {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    margin-top: 8px;
+    flex-wrap: wrap;
+  }
+  .speak-btn {
+    background: rgba(20,40,28,0.7);
+    border: 2px dashed rgba(245,241,230,0.4);
+    color: #f5f1e6;
+    padding: 8px 18px;
+    border-radius: 24px;
+    font-family: 'Caveat', cursive;
+    font-size: 18px;
+    transition: all 0.15s;
+  }
+  .speak-btn:hover { border-color: #f5e08a; background: rgba(40,70,50,0.7); }
+  .speak-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  .input-row {
+    margin-top: 24px;
+    display: flex;
+    gap: 10px;
+    align-items: center;
+  }
+  .input-row input {
+    flex: 1;
+    min-width: 0;
+    background: #1a1410;
+    border: 2px solid #6b4a25;
+    color: #f5f1e6;
+    padding: 14px 18px;
+    border-radius: 8px;
+    font-size: 22px;
+    letter-spacing: 4px;
+    font-family: 'Courier New', monospace;
+    text-transform: lowercase;
+  }
+  .input-row input:focus { outline: none; border-color: #f5e08a; }
+  .input-row input::placeholder { color: rgba(245,241,230,0.3); letter-spacing: 1px; }
+  .primary-btn {
+    background: linear-gradient(180deg, #f5e08a 0%, #d9b870 100%);
+    border: 2px solid #6b4a25;
+    color: #1a1410;
+    padding: 12px 24px;
+    border-radius: 8px;
+    font-size: 18px;
+    font-weight: bold;
+    transition: all 0.15s;
+  }
+  .primary-btn:hover { transform: translateY(-1px); box-shadow: 0 4px 8px rgba(0,0,0,0.4); }
+  .primary-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+  .ghost-btn {
+    background: transparent;
+    border: 2px dashed rgba(245,241,230,0.4);
+    color: #e8dcc4;
+    padding: 10px 16px;
+    border-radius: 8px;
+    font-size: 16px;
+    transition: all 0.15s;
+  }
+  .ghost-btn:hover { border-color: #f5e08a; color: #f5e08a; }
+
+  .feedback-correct .blackboard { box-shadow: inset 0 0 80px rgba(120, 220, 120, 0.3); }
+  .feedback-wrong   .blackboard { animation: shake 0.4s; box-shadow: inset 0 0 80px rgba(220, 100, 100, 0.4); }
+  @keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-8px); }
+    75% { transform: translateX(8px); }
+  }
+
+  .reveal-banner {
+    text-align: center;
+    margin-top: 20px;
+    font-family: 'Caveat', cursive;
+    font-size: 32px;
+    color: #f5e08a;
+    min-height: 50px;
+    line-height: 1.2;
+  }
+  .reveal-banner.correct { color: #8ed987; }
+  .reveal-banner.wrong   { color: #d9645a; }
+  .reveal-banner .small {
+    display: block;
+    font-size: 22px;
+    color: #f5f1e6;
+    margin-top: 4px;
+  }
+
+  /* ========= RESULTS ========= */
+  .results-card { text-align: center; padding: 30px 20px; }
+  .results-score {
+    font-size: 64px;
+    font-family: 'Caveat', cursive;
+    color: #f5e08a;
+    margin: 14px 0;
+  }
+  .results-stats {
+    display: flex;
+    justify-content: center;
+    gap: 30px;
+    flex-wrap: wrap;
+    margin: 18px 0;
+    font-family: 'Caveat', cursive;
+    font-size: 26px;
+  }
+  .results-stats span { color: #b8e8e0; }
+  .results-review { margin-top: 24px; text-align: left; }
+  .review-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 12px;
+    margin-bottom: 4px;
+    border-radius: 4px;
+    background: rgba(15,36,24,0.4);
+    font-family: 'Caveat', cursive;
+    font-size: 20px;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .review-item.correct { border-left: 4px solid #8ed987; }
+  .review-item.wrong   { border-left: 4px solid #d9645a; }
+  .review-item .your-attempt {
+    color: #b8a77a;
+    font-style: italic;
+    font-size: 16px;
+    margin-left: 8px;
+  }
+  .review-item .answer { color: #f5e08a; }
+
+  /* ========= MISC ========= */
+  .hidden { display: none !important; }
+  .footer-note {
+    text-align: center;
+    margin-top: 40px;
+    font-size: 13px;
+    color: #6b5a3a;
+    font-style: italic;
+  }
+  .top-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 16px;
+    padding: 0 4px;
+  }
+  .top-bar-title {
+    font-family: 'Caveat', cursive;
+    font-size: 28px;
+    color: #f5e08a;
+  }
+
+  .loading-dots::after {
+    content: '';
+    display: inline-block;
+    width: 1em;
+    text-align: left;
+    animation: dots 1.2s steps(4) infinite;
+  }
+  @keyframes dots {
+    0%   { content: ''; }
+    25%  { content: '.'; }
+    50%  { content: '..'; }
+    75%  { content: '...'; }
+  }
+
+  /* ========= MODALS ========= */
+  .modal-bg {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.7);
+    display: flex; align-items: center; justify-content: center;
+    z-index: 100;
+    padding: 20px;
+  }
+  .modal-bg.hidden { display: none; }
+  .modal-card {
+    background: #2a1f17;
+    border: 2px solid #6b4a25;
+    border-radius: 10px;
+    padding: 24px;
+    max-width: 480px;
+    width: 100%;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.8);
+    max-height: 90vh;
+    overflow-y: auto;
+  }
+  .modal-card h3 {
+    margin: 0 0 16px;
+    font-family: 'Caveat', cursive;
+    font-size: 28px;
+    color: #f5e08a;
+  }
+  .setting-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin: 12px 0;
+    gap: 10px;
+  }
+  .setting-row label { flex: 1; color: #e8dcc4; }
+  .setting-row select, .setting-row input[type="range"], .setting-row input[type="number"], .setting-row input[type="text"] {
+    background: #1a1410;
+    color: #f5f1e6;
+    border: 1px solid #6b4a25;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-family: inherit;
+  }
+  .voice-select { width: 240px; max-width: 60%; }
+
+  .add-word-row {
+    display: flex;
+    gap: 8px;
+    margin: 16px 0;
+  }
+  .add-word-row input {
+    flex: 1;
+    background: #1a1410;
+    border: 1px solid #6b4a25;
+    color: #f5f1e6;
+    padding: 8px 12px;
+    border-radius: 6px;
+    font-size: 16px;
+  }
+  .add-word-row input:focus { outline: none; border-color: #f5e08a; }
+  .add-word-result {
+    background: rgba(15,36,24,0.5);
+    border-radius: 6px;
+    padding: 10px 12px;
+    margin-top: 10px;
+    font-size: 14px;
+    color: #b8a77a;
+    min-height: 36px;
+  }
+  .custom-words-list {
+    margin-top: 12px;
+    max-height: 180px;
+    overflow-y: auto;
+    border-top: 1px dashed rgba(245,241,230,0.2);
+    padding-top: 8px;
+  }
+  .custom-word-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 4px 0;
+    font-size: 14px;
+  }
+  .custom-word-row .x {
+    background: transparent;
+    border: none;
+    color: #d9645a;
+    font-size: 18px;
+    cursor: pointer;
+    padding: 0 6px;
+  }
+
+  /* ========= RESPONSIVE ========= */
+  @media (max-width: 640px) {
+    h1.brand { font-size: 32px; }
+    .typed-chalk { font-size: 48px; letter-spacing: 4px; min-height: 60px; }
+    .typed-chalk .cursor { height: 44px; }
+    .blackboard { padding: 20px 18px; min-height: 280px; }
+    .definition-line { font-size: 16px; }
+    .home-tagline { font-size: 22px; }
+    .input-row input { font-size: 18px; padding: 10px 14px; }
+    .word-search { width: 140px; }
+  }
+</style>
+</head>
+<body>
+<div class="room">
+
+  <!-- ============ HOME SCREEN ============ -->
+  <div id="screen-home">
+    <h1 class="brand">🐝 Chalkboard Spelling Bee</h1>
+    <p class="subtitle">Type what you hear. Get it right. Keep the streak.</p>
+
+    <div class="blackboard-wrap">
+      <div class="blackboard">
+        <div class="home-header">
+          <div class="chalk home-tagline">
+            <span class="chalk-yellow">welcome</span>, speller.
+            <br>choose your challenge.
+          </div>
+          <div class="word-count-line chalk" id="word-count-line">loading word list...</div>
+        </div>
+        <div class="menu-grid">
+          <button class="menu-btn" onclick="startMode('campaign')">
+            📚 Campaign
+            <span class="difficulty-tag">progressively harder</span>
+            <span class="count-tag" id="count-campaign">—</span>
+          </button>
+          <button class="menu-btn" onclick="startMode('easy')">
+            🌱 Easy
+            <span class="difficulty-tag">rank &lt; 2.5</span>
+            <span class="count-tag" id="count-easy">—</span>
+          </button>
+          <button class="menu-btn" onclick="startMode('medium')">
+            🌾 Medium
+            <span class="difficulty-tag">rank 2.5 – 5.0</span>
+            <span class="count-tag" id="count-medium">—</span>
+          </button>
+          <button class="menu-btn" onclick="startMode('hard')">
+            🔥 Hard
+            <span class="difficulty-tag">rank 5.0 – 7.5</span>
+            <span class="count-tag" id="count-hard">—</span>
+          </button>
+          <button class="menu-btn" onclick="startMode('expert')">
+            💀 Expert
+            <span class="difficulty-tag">rank &gt; 7.5</span>
+            <span class="count-tag" id="count-expert">—</span>
+          </button>
+          <button class="menu-btn" onclick="startMode('absurd')" style="border-color:#a855f7;">
+            🤯 Absurd
+            <span class="difficulty-tag">rank &gt; 10 · sesquipedalian</span>
+            <span class="count-tag" id="count-absurd">—</span>
+          </button>
+          <button class="menu-btn" onclick="startMode('custom')">
+            ✨ Custom Words
+            <span class="difficulty-tag">your own list</span>
+            <span class="count-tag" id="count-custom">—</span>
+          </button>
+        </div>
+        <div style="text-align:center; margin-top:10px;">
+          <button class="ghost-btn" onclick="openCustomWordsModal()">+ Add your own words</button>
+        </div>
+      </div>
+      <div class="chalk-tray">
+        <div class="chalk-stick"></div>
+        <div class="chalk-stick yellow"></div>
+        <div class="chalk-stick pink"></div>
+        <div class="eraser"></div>
+      </div>
+    </div>
+
+    <!-- WORD LIST -->
+    <div class="word-list-section">
+      <div class="word-list-header">
+        <h2>📖 The Full Word List</h2>
+        <div class="filter-row" id="filter-row">
+          <button class="filter-pill active" data-filter="all">All</button>
+          <button class="filter-pill" data-filter="1">&lt;2.5</button>
+          <button class="filter-pill" data-filter="2">2.5–5</button>
+          <button class="filter-pill" data-filter="3">5–7.5</button>
+          <button class="filter-pill" data-filter="4">7.5–10</button>
+          <button class="filter-pill" data-filter="5">&gt;10 🤯</button>
+          <input type="text" class="word-search" id="word-search" placeholder="search...">
+        </div>
+      </div>
+      <div class="word-list-count" id="word-list-count">—</div>
+      <div class="word-grid" id="word-grid"></div>
+      <div class="pagination-row" id="pagination-row"></div>
+    </div>
+
+    <p class="footer-note">
+      Definitions provided live by <a href="https://dictionaryapi.dev" style="color:#b8a77a;">dictionaryapi.dev</a>.
+      Voice provided by your browser. Use headphones for the full effect.
+    </p>
+  </div>
+
+  <!-- ============ GAME SCREEN ============ -->
+  <div id="screen-game" class="hidden">
+    <div class="top-bar">
+      <button class="ghost-btn" onclick="goHome()">← Quit</button>
+      <div class="top-bar-title" id="mode-title">Campaign</div>
+      <button class="icon-btn" onclick="openSettings()" title="settings">⚙</button>
+    </div>
+
+    <div class="game-info-row">
+      <div class="game-meta">
+        Word <span id="word-num">1</span> / <span id="word-total">15</span>
+      </div>
+      <div class="game-meta">
+        Score: <span id="score">0</span>
+        &nbsp;·&nbsp; Streak: <span id="streak">0</span>
+      </div>
+    </div>
+
+    <div class="blackboard-wrap" id="board-shake-target">
+      <div class="blackboard">
+        <div class="board-content">
+          <div class="difficulty-badge-row">
+            <div class="difficulty-badge" id="difficulty-badge" style="display:none">—</div>
+          </div>
+          <div class="definition-line chalk">
+            <span class="label chalk-cyan">definition</span>
+            <span id="definition-text" class="loading-dots">looking it up</span>
+          </div>
+
+          <div class="word-display">
+            <div id="typed-chalk" class="typed-chalk chalk">
+              <span class="cursor"></span>
+            </div>
+            <div class="speak-row">
+              <button class="speak-btn" id="btn-speak" onclick="speakWord()">🔊 Say it</button>
+              <button class="speak-btn" id="btn-speak-slow" onclick="speakWord(true)">🐢 Slowly</button>
+              <button class="speak-btn" id="btn-spell-letters" onclick="speakLetters()">A · B · C</button>
+            </div>
+          </div>
+
+          <div class="reveal-banner" id="reveal-banner"></div>
+        </div>
+      </div>
+      <div class="chalk-tray">
+        <div class="chalk-stick"></div>
+        <div class="chalk-stick yellow"></div>
+        <div class="chalk-stick pink"></div>
+        <div class="eraser"></div>
+      </div>
+    </div>
+
+    <div class="input-row">
+      <input type="text" id="spell-input" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="type your answer...">
+      <button class="primary-btn" id="btn-submit" onclick="submitAttempt()">Submit</button>
+    </div>
+  </div>
+
+  <!-- ============ RESULTS SCREEN ============ -->
+  <div id="screen-results" class="hidden">
+    <div class="top-bar">
+      <button class="ghost-btn" onclick="goHome()">← Home</button>
+      <div class="top-bar-title">Round Complete</div>
+      <span style="width:80px;"></span>
+    </div>
+    <div class="blackboard-wrap">
+      <div class="blackboard">
+        <div class="results-card chalk">
+          <div class="chalk-yellow" style="font-size:32px;">🎓 Final Tally</div>
+          <div class="results-score" id="final-score">0 / 0</div>
+          <div class="results-stats chalk">
+            <div>Correct: <span class="chalk-cyan" id="final-correct">0</span></div>
+            <div>Streak: <span class="chalk-pink" id="final-streak">0</span></div>
+            <div>Points: <span class="chalk-yellow" id="final-points">0</span></div>
+          </div>
+          <div class="results-review" id="final-review"></div>
+        </div>
+      </div>
+      <div class="chalk-tray">
+        <div class="chalk-stick"></div>
+        <div class="chalk-stick yellow"></div>
+        <div class="chalk-stick pink"></div>
+        <div class="eraser"></div>
+      </div>
+    </div>
+    <div style="text-align:center; margin-top: 24px; display:flex; gap:12px; justify-content:center; flex-wrap:wrap;">
+      <button class="primary-btn" onclick="replayMode()">Play Again</button>
+      <button class="ghost-btn" onclick="goHome()">Home</button>
+    </div>
+  </div>
+
+  <!-- ============ SETTINGS MODAL ============ -->
+  <div class="modal-bg hidden" id="settings-modal" onclick="if(event.target===this) closeSettings()">
+    <div class="modal-card">
+      <h3>⚙ Settings</h3>
+      <div class="setting-row">
+        <label>Voice</label>
+        <select id="voice-select" class="voice-select"></select>
+      </div>
+      <div class="setting-row">
+        <label>Speech rate: <span id="rate-val">1.0</span></label>
+        <input type="range" id="rate-slider" min="0.5" max="1.2" step="0.05" value="1.0">
+      </div>
+      <div class="setting-row">
+        <label>Show letters as you type</label>
+        <input type="checkbox" id="show-letters" checked>
+      </div>
+      <div class="setting-row">
+        <label>Words per round</label>
+        <input type="number" id="words-per-round" min="5" max="50" value="15" style="width:80px">
+      </div>
+      <div style="text-align:right; margin-top: 16px;">
+        <button class="primary-btn" onclick="closeSettings()">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ CUSTOM WORDS MODAL ============ -->
+  <div class="modal-bg hidden" id="custom-modal" onclick="if(event.target===this) closeCustomWordsModal()">
+    <div class="modal-card">
+      <h3>✨ Add Your Own Words</h3>
+      <p style="margin: 0 0 12px; font-size:14px; color:#b8a77a;">
+        Type any English word. It'll be auto-ranked by difficulty and added to your custom list, which you can play in "Custom Words" mode.
+      </p>
+      <div class="add-word-row">
+        <input type="text" id="custom-word-input" placeholder="e.g. perspicacious" autocomplete="off">
+        <button class="primary-btn" onclick="addCustomWord()">Add</button>
+      </div>
+      <div class="add-word-result" id="add-result">type a word to see its difficulty rank</div>
+      <div class="custom-words-list" id="custom-words-list"></div>
+      <div style="text-align:right; margin-top: 16px; display:flex; gap:8px; justify-content:flex-end;">
+        <button class="ghost-btn" onclick="clearCustomWords()">Clear all</button>
+        <button class="primary-btn" onclick="closeCustomWordsModal()">Done</button>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Word list data — loaded from external file -->
+<script src="words.js"></script>
+
+<script>
+// =============================================================
+// DIFFICULTY ALGORITHM (mirrors the Python version used to build words.js)
+// =============================================================
+// This lets us rank ANY word the user types on the fly.
+
+const SILENT_PATTERNS = [
+  [/^kn/g,    0.8],  [/^gn/g,    0.9],  [/^ps/g,    1.1],
+  [/^pn/g,    1.4],  [/^mn/g,    1.4],  [/^wr/g,    0.7],
+  [/mb$/g,    0.7],  [/mn$/g,    1.0],  [/gh/g,     0.8],
+  [/ght/g,    0.5],  [/phth/g,   1.8],  [/chth/g,   1.8],
+  [/rrh/g,    1.4],  [/sci/g,    0.4],  [/rh/g,     0.6],
+  [/eau/g,    0.9],  [/oeu/g,    1.4],  [/eou/g,    0.7],
+  [/ois/g,    0.8],  [/eu/g,     0.4],  [/ae/g,     0.7],
+  [/oe/g,     0.6],  [/ueue/g,   1.2],  [/tch/g,    0.2],
+  [/dge/g,    0.2],  [/sch/g,    0.4],  [/cqu/g,    0.7],
+  [/que$/g,   0.7],  [/gue$/g,   0.6],  [/tious/g,  0.5],
+  [/cious/g,  0.5],  [/eous/g,   0.5],  [/ph/g,     0.3],
+  [/ough/g,   0.9],  [/augh/g,   0.7],
+];
+const DOUBLE_CONSONANTS = ['bb','cc','dd','ff','gg','ll','mm','nn','pp','rr','ss','tt','zz'];
+
+function difficulty(word, freqRank) {
+  const w = String(word).toLowerCase().trim();
+  if (!w) return 5.0;
+  let score = 1.0;
+
+  // Length contribution
+  const L = w.length;
+  if      (L <= 3) score += 0.2;
+  else if (L <= 4) score += 0.6;
+  else if (L <= 5) score += 1.0;
+  else if (L <= 6) score += 1.5;
+  else if (L <= 7) score += 2.0;
+  else if (L <= 8) score += 2.4;
+  else if (L <= 10) score += 2.9;
+  else if (L <= 12) score += 3.4;
+  else if (L <= 15) score += 4.0;
+  else             score += 4.5;
+
+  // Pattern matches
+  for (const [pat, weight] of SILENT_PATTERNS) {
+    const matches = w.match(pat);
+    if (matches) score += weight * matches.length;
+  }
+
+  // Double consonants
+  for (const dc of DOUBLE_CONSONANTS) {
+    let i = 0, c = 0;
+    while ((i = w.indexOf(dc, i)) !== -1) { c++; i += 1; }
+    score += 0.5 * c;
+  }
+
+  // Unusual letters
+  if (w.includes('q')) score += 0.4;
+  if (w.includes('x')) score += 0.3;
+  if (w.includes('y')) score += 0.2;
+  if (w.includes('z')) score += 0.4;
+
+  if (w.includes('-')) score += 0.7;
+  if (w.includes("'")) score += 0.5;
+
+  if (/[aeiou]{3,}/.test(w)) score += 0.8;
+
+  const vc = (w.match(/[aeiou]/g) || []).length;
+  if (vc >= 5) score += Math.min(1.5, (vc - 4) * 0.4);
+
+  // Frequency discount
+  if (freqRank != null) {
+    if      (freqRank < 100)   score -= 2.5;
+    else if (freqRank < 500)   score -= 2.0;
+    else if (freqRank < 1500)  score -= 1.5;
+    else if (freqRank < 4000)  score -= 1.0;
+    else if (freqRank < 10000) score -= 0.5;
+    else if (freqRank < 25000) score -= 0.2;
+  }
+
+  return Math.max(1.0, Math.min(10.0, Math.round(score * 10) / 10));
+}
+
+// =============================================================
+// STATE
+// =============================================================
+let WORDS = [];       // [{word, rank}]
+let WORDS_BY_BUCKET = { 1: [], 2: [], 3: [], 4: [], 5: [] };
+let CUSTOM_WORDS = [];  // user-added words: [{word, rank}]
+const CUSTOM_KEY = 'spellbee_custom_words';
+
+let state = {
+  mode: null,
+  queue: [],
+  idx: 0,
+  score: 0,
+  streak: 0,
+  bestStreak: 0,
+  results: [],
+  currentWord: null,
+  currentDef: null,
+  voice: null,
+  rate: 1.0,
+  showLetters: true,
+  wordsPerRound: 15,
+};
+
+// =============================================================
+// HELPERS
+// =============================================================
+function rankBucket(r) {
+  if (r < 2.5) return 1;
+  if (r < 5)   return 2;
+  if (r < 7.5) return 3;
+  if (r < 10)  return 4;
+  return 5;  // absurd: 10.0+
+}
+function rankColorClass(r) {
+  if (r < 2)   return 'rank-1';
+  if (r < 4)   return 'rank-2';
+  if (r < 6.5) return 'rank-3';
+  if (r < 8.5) return 'rank-4';
+  if (r < 10)  return 'rank-5';
+  if (r < 13)  return 'rank-6';
+  return 'rank-7';
+}
+function escapeHTML(s) {
+  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+function sample(arr, n) {
+  const copy = [...arr];
+  const out = [];
+  while (out.length < n && copy.length) {
+    out.push(copy.splice(Math.floor(Math.random() * copy.length), 1)[0]);
+  }
+  return out;
+}
+
+// =============================================================
+// SCREEN MANAGEMENT
+// =============================================================
+function showScreen(id) {
+  ['screen-home','screen-game','screen-results'].forEach(s => {
+    document.getElementById(s).classList.add('hidden');
+  });
+  document.getElementById(id).classList.remove('hidden');
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+function goHome() {
+  if (window.speechSynthesis) speechSynthesis.cancel();
+  showScreen('screen-home');
+}
+
+// =============================================================
+// CUSTOM WORDS — localStorage persistence
+// =============================================================
+function loadCustomWords() {
+  try {
+    const raw = localStorage.getItem(CUSTOM_KEY);
+    if (raw) CUSTOM_WORDS = JSON.parse(raw);
+  } catch (e) { CUSTOM_WORDS = []; }
+}
+function saveCustomWords() {
+  try { localStorage.setItem(CUSTOM_KEY, JSON.stringify(CUSTOM_WORDS)); } catch (e) {}
+}
+
+function openCustomWordsModal() {
+  renderCustomWordsList();
+  document.getElementById('custom-modal').classList.remove('hidden');
+  setTimeout(() => document.getElementById('custom-word-input').focus(), 50);
+}
+function closeCustomWordsModal() {
+  document.getElementById('custom-modal').classList.add('hidden');
+  updateModeCounts();
+}
+function renderCustomWordsList() {
+  const list = document.getElementById('custom-words-list');
+  if (CUSTOM_WORDS.length === 0) {
+    list.innerHTML = '<div style="color:#6b5a3a; font-style:italic; padding:8px 0;">your custom words appear here</div>';
+    return;
+  }
+  list.innerHTML = CUSTOM_WORDS.map((cw, i) => `
+    <div class="custom-word-row">
+      <div>
+        <span class="chalk" style="font-family:Caveat,cursive;font-size:18px;">${escapeHTML(cw.word)}</span>
+        <span class="word-card-rank ${rankColorClass(cw.rank)}" style="margin-left:8px;">${cw.rank.toFixed(1)}</span>
+      </div>
+      <button class="x" onclick="removeCustomWord(${i})" title="remove">×</button>
+    </div>
+  `).join('');
+}
+async function addCustomWord() {
+  const input = document.getElementById('custom-word-input');
+  const result = document.getElementById('add-result');
+  const w = input.value.trim().toLowerCase();
+  if (!w) return;
+  if (!/^[a-z][a-z'-]{0,30}[a-z]?$/.test(w)) {
+    result.innerHTML = '<span style="color:#d9645a;">that doesn\'t look like a valid word.</span>';
+    return;
+  }
+  if (CUSTOM_WORDS.some(cw => cw.word === w)) {
+    result.innerHTML = `<span style="color:#e8a460;">"${escapeHTML(w)}" is already in your list.</span>`;
+    return;
+  }
+  // Verify with dictionary API
+  result.innerHTML = `<span class="loading-dots">checking "${escapeHTML(w)}"</span>`;
+  const def = await fetchDefinition(w);
+  if (def.source === 'missing') {
+    result.innerHTML = `<span style="color:#d9645a;">"${escapeHTML(w)}" not found in the dictionary. you can still add it manually below.</span>`;
+    return;
+  }
+  // Compute difficulty — if it's in the main list, use that rank; else compute
+  const existing = WORDS.find(x => x.word === w);
+  const rank = existing ? existing.rank : difficulty(w, null);
+  CUSTOM_WORDS.push({ word: w, rank: rank, def: def });
+  saveCustomWords();
+  renderCustomWordsList();
+  result.innerHTML = `<span style="color:#8ed987;">added "<b>${escapeHTML(w)}</b>" — difficulty <b>${rank.toFixed(1)}/10</b></span>`;
+  input.value = '';
+  input.focus();
+}
+function removeCustomWord(i) {
+  CUSTOM_WORDS.splice(i, 1);
+  saveCustomWords();
+  renderCustomWordsList();
+}
+function clearCustomWords() {
+  if (CUSTOM_WORDS.length === 0) return;
+  if (!confirm(`Clear all ${CUSTOM_WORDS.length} custom words?`)) return;
+  CUSTOM_WORDS = [];
+  saveCustomWords();
+  renderCustomWordsList();
+}
+
+// =============================================================
+// HOME — MODE COUNTS
+// =============================================================
+function updateModeCounts() {
+  document.getElementById('count-campaign').textContent = `${state.wordsPerRound} words`;
+  document.getElementById('count-easy').textContent     = `${WORDS_BY_BUCKET[1].length} words`;
+  document.getElementById('count-medium').textContent   = `${WORDS_BY_BUCKET[2].length} words`;
+  document.getElementById('count-hard').textContent     = `${WORDS_BY_BUCKET[3].length} words`;
+  document.getElementById('count-expert').textContent   = `${WORDS_BY_BUCKET[4].length} words`;
+  document.getElementById('count-absurd').textContent   = `${WORDS_BY_BUCKET[5].length} monstrosities`;
+  document.getElementById('count-custom').textContent   = `${CUSTOM_WORDS.length} custom`;
+  document.getElementById('word-count-line').textContent =
+    `${WORDS.length.toLocaleString()} words in the bank · ranked 1.0 to 15.0`;
+}
+
+// =============================================================
+// HOME — WORD LIST RENDERING (paginated for performance)
+// =============================================================
+let currentFilter = 'all';
+let currentSearch = '';
+let currentPage = 0;
+const PAGE_SIZE = 60;
+
+let filteredCache = [];
+function rebuildFilteredCache() {
+  filteredCache = WORDS.filter(w => {
+    if (currentFilter !== 'all' && rankBucket(w.rank) !== parseInt(currentFilter)) return false;
+    if (currentSearch && !w.word.toLowerCase().includes(currentSearch)) return false;
+    return true;
+  });
+  currentPage = 0;
+}
+function renderWordList() {
+  const grid = document.getElementById('word-grid');
+  const countEl = document.getElementById('word-list-count');
+  const total = filteredCache.length;
+  const start = currentPage * PAGE_SIZE;
+  const end = Math.min(start + PAGE_SIZE, total);
+  const page = filteredCache.slice(start, end);
+
+  if (total === 0) {
+    countEl.textContent = '';
+    grid.innerHTML = '<div style="grid-column:1/-1; text-align:center; padding:30px; color:#8a7a5a; font-style:italic;">no words match that filter.</div>';
+    document.getElementById('pagination-row').innerHTML = '';
+    return;
+  }
+  countEl.textContent = `showing ${start+1}–${end} of ${total.toLocaleString()} words`;
+
+  grid.innerHTML = page.map(w => {
+    const showOnlyTag = w.showOnly ? '<span class="show-only-badge">view only</span>' : '';
+    // For very long words, show with smaller font in the card
+    const wordFontSize = w.word.length > 30 ? '14px' : (w.word.length > 18 ? '16px' : '22px');
+    const wordStyle = `style="font-size:${wordFontSize}; word-break:break-all;"`;
+    const rankDisplay = w.rank > 10 ? w.rank.toFixed(1) : w.rank.toFixed(1) + '/10';
+    return `
+    <div class="word-card" data-word="${escapeHTML(w.word)}" onclick="toggleCard(this, '${escapeHTML(w.word)}')">
+      <div class="word-card-top">
+        <div class="word-card-word" ${wordStyle}>${escapeHTML(w.word.length > 60 ? w.word.slice(0,57) + '…' : w.word)}${showOnlyTag}</div>
+        <div class="word-card-rank ${rankColorClass(w.rank)}">${rankDisplay}</div>
+      </div>
+      <div class="word-card-def">
+        <span class="loading-dots">loading definition</span>
+      </div>
+    </div>
+  `;}).join('');
+
+  // Pagination
+  const totalPages = Math.ceil(total / PAGE_SIZE);
+  const prevDisabled = currentPage === 0 ? 'disabled' : '';
+  const nextDisabled = currentPage >= totalPages - 1 ? 'disabled' : '';
+  document.getElementById('pagination-row').innerHTML = `
+    <button ${prevDisabled} onclick="gotoPage(${currentPage - 1})">← Prev</button>
+    <span>page ${currentPage + 1} of ${totalPages}</span>
+    <button ${nextDisabled} onclick="gotoPage(${currentPage + 1})">Next →</button>
+  `;
+}
+function gotoPage(p) {
+  currentPage = p;
+  renderWordList();
+  document.querySelector('.word-list-section').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+// Definition cache for word list cards
+const DEF_CACHE = new Map();
+
+async function toggleCard(el, word) {
+  el.classList.toggle('expanded');
+  if (!el.classList.contains('expanded')) return;
+  const defEl = el.querySelector('.word-card-def');
+
+  // Already loaded?
+  if (DEF_CACHE.has(word)) {
+    const def = DEF_CACHE.get(word);
+    defEl.innerHTML = renderDefHTML(def, word);
+    return;
+  }
+  const def = await fetchDefinition(word);
+  DEF_CACHE.set(word, def);
+  defEl.innerHTML = renderDefHTML(def, word);
+}
+
+function renderDefHTML(def, word) {
+  let html = '';
+  // If the word in the card header was truncated, show the full version here
+  const entry = WORDS.find(w => w.word === word);
+  if (entry && word.length > 60) {
+    html += `<div style="font-family:'Courier New',monospace; font-size:11px; color:#b8e8e0; word-break:break-all; padding:6px 8px; background:rgba(0,0,0,0.3); border-radius:4px; margin-bottom:8px; max-height:120px; overflow-y:auto;">${escapeHTML(word)}</div>`;
+  }
+  if (def.pos) html += `<span class="pos">${escapeHTML(def.pos)}</span>`;
+  html += escapeHTML(def.text);
+  if (def.example) {
+    html += `<br><span style="color:#b8e8e0;font-style:italic;">— "${escapeHTML(def.example)}"</span>`;
+  }
+  if (entry && !entry.showOnly) {
+    html += `<br><button class="play-mini" onclick="event.stopPropagation(); previewWord('${escapeHTML(word)}')">🔊 hear it</button>`;
+  }
+  return html;
+}
+
+function previewWord(w) {
+  if (!window.speechSynthesis) return;
+  speechSynthesis.cancel();
+  const u = new SpeechSynthesisUtterance(w);
+  if (state.voice) u.voice = state.voice;
+  u.rate = state.rate;
+  speechSynthesis.speak(u);
+}
+
+// =============================================================
+// VOICES
+// =============================================================
+function initVoices() {
+  if (!window.speechSynthesis) {
+    document.getElementById('voice-select').innerHTML = '<option>not supported</option>';
+    return;
+  }
+  function populate() {
+    const voices = speechSynthesis.getVoices().filter(v => v.lang.startsWith('en'));
+    const sel = document.getElementById('voice-select');
+    sel.innerHTML = '';
+    if (voices.length === 0) {
+      sel.innerHTML = '<option value="">(default)</option>';
+      return;
+    }
+    voices.forEach(v => {
+      const o = document.createElement('option');
+      o.value = v.name;
+      o.textContent = `${v.name} (${v.lang})`;
+      sel.appendChild(o);
+    });
+    const preferred = voices.find(v => /natural|enhanced|premium|google|samantha|daniel/i.test(v.name))
+                   || voices.find(v => v.default)
+                   || voices[0];
+    if (preferred) {
+      sel.value = preferred.name;
+      state.voice = preferred;
+    }
+    sel.addEventListener('change', () => {
+      state.voice = voices.find(v => v.name === sel.value) || null;
+    });
+  }
+  populate();
+  speechSynthesis.onvoiceschanged = populate;
+}
+
+function openSettings()  { document.getElementById('settings-modal').classList.remove('hidden'); }
+function closeSettings() { document.getElementById('settings-modal').classList.add('hidden'); }
+
+// =============================================================
+// SPEECH
+// =============================================================
+function speakWord(slow = false) {
+  if (!state.currentWord || !window.speechSynthesis) return;
+  speechSynthesis.cancel();
+  const u = new SpeechSynthesisUtterance(state.currentWord);
+  if (state.voice) u.voice = state.voice;
+  u.rate = slow ? Math.max(0.55, state.rate - 0.35) : state.rate;
+  u.pitch = 1.0;
+  u.volume = 1.0;
+  speechSynthesis.speak(u);
+}
+
+function speakLetters() {
+  // Spells the word out letter-by-letter. Helpful for the very hard ones.
+  if (!state.currentWord || !window.speechSynthesis) return;
+  speechSynthesis.cancel();
+  // We don't want to GIVE AWAY the spelling — only speak the word slowly with pauses,
+  // or speak each syllable. Instead, use the example sentence if available.
+  if (state.currentDef && state.currentDef.example) {
+    const u = new SpeechSynthesisUtterance(state.currentDef.example);
+    if (state.voice) u.voice = state.voice;
+    u.rate = Math.max(0.7, state.rate - 0.2);
+    speechSynthesis.speak(u);
+  } else {
+    // No example — say "use it in a sentence: <word>, the speller heard <word>."
+    const sentence = `${state.currentWord}. The word is ${state.currentWord}.`;
+    const u = new SpeechSynthesisUtterance(sentence);
+    if (state.voice) u.voice = state.voice;
+    u.rate = Math.max(0.7, state.rate - 0.2);
+    speechSynthesis.speak(u);
+  }
+}
+
+// =============================================================
+// MODE SETUP
+// =============================================================
+function pickWords(mode) {
+  const N = state.wordsPerRound;
+  if (mode === 'campaign') {
+    // Pull evenly from each bucket (1-4), then sort easy → hard.
+    // Campaign explicitly does NOT include absurd-tier words.
+    const perBucket = Math.ceil(N / 4);
+    const picks = [];
+    for (let b = 1; b <= 4; b++) {
+      const pool = WORDS_BY_BUCKET[b];
+      if (pool.length === 0) continue;
+      picks.push(...sample(pool, Math.min(perBucket, pool.length)));
+    }
+    picks.sort((a, b) => a.rank - b.rank);
+    return picks.slice(0, N);
+  }
+  let pool;
+  if      (mode === 'easy')   pool = WORDS_BY_BUCKET[1];
+  else if (mode === 'medium') pool = WORDS_BY_BUCKET[2];
+  else if (mode === 'hard')   pool = WORDS_BY_BUCKET[3];
+  else if (mode === 'expert') pool = WORDS_BY_BUCKET[4];
+  else if (mode === 'absurd') pool = WORDS_BY_BUCKET[5];
+  else if (mode === 'custom') pool = CUSTOM_WORDS;
+  else                        pool = WORDS.filter(w => !w.showOnly);
+  if (pool.length === 0) return [];
+  // For absurd, fewer words per round (these take forever)
+  const cap = mode === 'absurd' ? Math.min(5, state.wordsPerRound) : state.wordsPerRound;
+  return sample(pool, Math.min(cap, pool.length));
+}
+
+const MODE_LABELS = {
+  campaign: '📚 Campaign',
+  easy:     '🌱 Easy',
+  medium:   '🌾 Medium',
+  hard:     '🔥 Hard',
+  expert:   '💀 Expert',
+  absurd:   '🤯 Absurd',
+  custom:   '✨ Custom',
+};
+
+function startMode(mode) {
+  if (mode === 'custom' && CUSTOM_WORDS.length === 0) {
+    alert("You haven't added any custom words yet. Click \"+ Add your own words\" to get started.");
+    openCustomWordsModal();
+    return;
+  }
+  state.mode = mode;
+  state.queue = pickWords(mode);
+  if (state.queue.length === 0) {
+    alert('No words available for this mode.');
+    return;
+  }
+  state.idx = 0;
+  state.score = 0;
+  state.streak = 0;
+  state.bestStreak = 0;
+  state.results = [];
+  document.getElementById('mode-title').textContent = MODE_LABELS[mode] || mode;
+  document.getElementById('word-total').textContent = state.queue.length;
+  showScreen('screen-game');
+  loadCurrentWord();
+}
+function replayMode() {
+  if (state.mode) startMode(state.mode);
+  else goHome();
+}
+
+// =============================================================
+// DICTIONARY API
+// =============================================================
+async function fetchDefinition(word) {
+  // Built-in definitions take priority (covers the absurd-tier monsters
+  // that won't resolve in the live dictionary API).
+  if (BUILTIN_DEFS.has(word)) return BUILTIN_DEFS.get(word);
+
+  // Check the custom-words cache
+  const customMatch = CUSTOM_WORDS.find(cw => cw.word === word);
+  if (customMatch && customMatch.def) return customMatch.def;
+
+  try {
+    const ctrl = new AbortController();
+    const timeoutId = setTimeout(() => ctrl.abort(), 6000);
+    const resp = await fetch(
+      `https://api.dictionaryapi.dev/api/v2/entries/en/${encodeURIComponent(word)}`,
+      { signal: ctrl.signal }
+    );
+    clearTimeout(timeoutId);
+    if (resp.ok) {
+      const data = await resp.json();
+      const entry = Array.isArray(data) ? data[0] : null;
+      if (entry && entry.meanings && entry.meanings.length) {
+        for (const m of entry.meanings) {
+          if (m.definitions && m.definitions.length) {
+            const d = m.definitions[0];
+            return {
+              pos:     m.partOfSpeech || '',
+              text:    d.definition || '(no definition text)',
+              example: d.example || null,
+              source:  'live',
+            };
+          }
+        }
+      }
+    }
+  } catch (e) { /* fall through */ }
+  return { pos: '', text: '(definition unavailable — type your best guess)', source: 'missing' };
+}
+
+// =============================================================
+// GAME FLOW
+// =============================================================
+async function loadCurrentWord() {
+  const entry = state.queue[state.idx];
+  state.currentWord = entry.word;
+  state.currentDef = null;
+
+  // Reset UI
+  document.getElementById('word-num').textContent = state.idx + 1;
+  document.getElementById('score').textContent = state.score;
+  document.getElementById('streak').textContent = state.streak;
+  document.getElementById('reveal-banner').textContent = '';
+  document.getElementById('reveal-banner').className = 'reveal-banner';
+  document.getElementById('board-shake-target').classList.remove('feedback-correct','feedback-wrong');
+  const defText = document.getElementById('definition-text');
+  defText.className = 'loading-dots';
+  defText.textContent = 'looking it up';
+  document.getElementById('spell-input').value = '';
+  document.getElementById('spell-input').disabled = false;
+  document.getElementById('btn-submit').disabled = false;
+  document.getElementById('btn-speak').disabled = false;
+  document.getElementById('btn-speak-slow').disabled = false;
+
+  // Show difficulty badge
+  const badge = document.getElementById('difficulty-badge');
+  badge.style.display = 'inline-block';
+  badge.textContent = entry.rank > 10
+    ? `difficulty ${entry.rank.toFixed(1)} 🤯`
+    : `difficulty ${entry.rank.toFixed(1)}`;
+  badge.className = 'difficulty-badge ' + rankColorClass(entry.rank);
+
+  updateChalkDisplay();
+  document.getElementById('spell-input').focus();
+
+  const def = await fetchDefinition(entry.word);
+  // Only render if we're still on the same word (user may have advanced)
+  if (state.currentWord !== entry.word) return;
+  state.currentDef = def;
+  defText.className = '';
+  let html = '';
+  if (def.pos) html += `<span class="pos">${escapeHTML(def.pos)}</span>`;
+  html += escapeHTML(def.text);
+  if (def.example) {
+    // Mask the word in the example so it doesn't give away the spelling
+    const masked = maskWordInSentence(def.example, entry.word);
+    html += `<span class="example">"${escapeHTML(masked)}"</span>`;
+  }
+  defText.innerHTML = html;
+
+  // Auto-speak the word
+  setTimeout(() => speakWord(), 350);
+}
+
+function maskWordInSentence(sentence, word) {
+  // Replace the word (and obvious inflections) with "_____"
+  // so the example doesn't spoil the spelling.
+  const stem = word.length > 4 ? word.slice(0, Math.max(4, word.length - 2)) : word;
+  const re = new RegExp('\\b' + stem.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\w*\\b', 'gi');
+  return sentence.replace(re, '_____');
+}
+
+function chalkSizeClass(text) {
+  // Choose a size class based on length so very long words don't overflow.
+  const L = text.length;
+  if (L <= 8)  return '';            // default 72px
+  if (L <= 12) return 'size-md';     // 56px
+  if (L <= 18) return 'size-sm';     // 42px
+  if (L <= 28) return 'size-xs';     // 32px
+  if (L <= 45) return 'size-xxs';    // 24px
+  return 'size-tiny';                // 18px
+}
+
+function updateChalkDisplay() {
+  const display = document.getElementById('typed-chalk');
+  const input = document.getElementById('spell-input');
+  if (!display || !input) return;
+  const text = (input.value || '').toLowerCase();
+  // Size the chalk by the LONGER of (current text, current word) so the box
+  // doesn't jump around as the user types.
+  const sizeRef = (state.currentWord && state.currentWord.length > text.length)
+    ? state.currentWord
+    : text;
+  const sizeClass = chalkSizeClass(sizeRef);
+  display.className = 'typed-chalk chalk' + (sizeClass ? ' ' + sizeClass : '');
+  if (!state.showLetters) {
+    display.innerHTML = text.split('').map(() => '_').join(' ') + '<span class="cursor"></span>';
+    return;
+  }
+  display.innerHTML = escapeHTML(text) + '<span class="cursor"></span>';
+}
+
+function setupGameInput() {
+  const input = document.getElementById('spell-input');
+  input.addEventListener('input', () => {
+    input.value = input.value.replace(/[^a-zA-Z'\-]/g, '');
+    updateChalkDisplay();
+  });
+  input.addEventListener('keydown', e => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      submitAttempt();
+    }
+  });
+}
+
+function submitAttempt() {
+  if (!state.currentWord) return;
+  const input = document.getElementById('spell-input');
+  const guess = input.value.trim().toLowerCase();
+  if (!guess) return;
+
+  const correctAnswer = state.currentWord.toLowerCase();
+  const isCorrect = guess === correctAnswer;
+
+  const banner = document.getElementById('reveal-banner');
+  const board = document.getElementById('board-shake-target');
+  input.disabled = true;
+  document.getElementById('btn-submit').disabled = true;
+
+  if (isCorrect) {
+    state.streak++;
+    state.bestStreak = Math.max(state.bestStreak, state.streak);
+    const wordRank = state.queue[state.idx].rank;
+    // Points = round(rank * 10) + streak bonus (capped)
+    const streakBonus = Math.min(state.streak * 2, 20);
+    const points = Math.round(wordRank * 10) + streakBonus;
+    state.score += points;
+    state.results.push({
+      word: correctAnswer,
+      attempt: guess,
+      correct: true,
+      points: points,
+      rank: wordRank,
+    });
+    banner.className = 'reveal-banner correct';
+    let banner_html = `✓ correct! <span class="small">+${points} points`;
+    if (streakBonus > 0) banner_html += ` (includes +${streakBonus} streak bonus)`;
+    banner_html += `</span>`;
+    banner.innerHTML = banner_html;
+    board.classList.add('feedback-correct');
+  } else {
+    state.streak = 0;
+    state.results.push({
+      word: correctAnswer,
+      attempt: guess,
+      correct: false,
+      points: 0,
+      rank: state.queue[state.idx].rank,
+    });
+    banner.className = 'reveal-banner wrong';
+    // For very long words, drop the size and break to a new line
+    const longDisp = correctAnswer.length > 25;
+    const wordHTML = longDisp
+      ? `<br><span class="chalk-yellow" style="font-size:0.7em; word-break:break-all; display:inline-block; max-width:100%; line-height:1.1;">${escapeHTML(correctAnswer)}</span>`
+      : `<span class="chalk-yellow">${escapeHTML(correctAnswer)}</span>`;
+    banner.innerHTML = `✗ the word was ${wordHTML}`;
+    board.classList.add('feedback-wrong');
+  }
+
+  document.getElementById('score').textContent = state.score;
+  document.getElementById('streak').textContent = state.streak;
+
+  setTimeout(() => {
+    state.idx++;
+    if (state.idx >= state.queue.length) showResults();
+    else loadCurrentWord();
+  }, isCorrect ? (correctAnswer.length > 20 ? 2500 : 1500)
+              : (correctAnswer.length > 20 ? 4500 : 2600));
+}
+
+// =============================================================
+// RESULTS
+// =============================================================
+function showResults() {
+  const total = state.queue.length;
+  const correct = state.results.filter(r => r.correct).length;
+  document.getElementById('final-score').textContent = `${correct} / ${total}`;
+  document.getElementById('final-correct').textContent = correct;
+  document.getElementById('final-streak').textContent = state.bestStreak;
+  document.getElementById('final-points').textContent = state.score;
+
+  const reviewHTML = state.results.map(r => {
+    const wordDisp = r.word.length > 50 ? r.word.slice(0, 47) + '…' : r.word;
+    return `
+    <div class="review-item ${r.correct ? 'correct' : 'wrong'}">
+      <div style="min-width:0; flex:1; word-break:break-all;">
+        <span class="answer">${escapeHTML(wordDisp)}</span>
+        <span class="word-card-rank ${rankColorClass(r.rank)}" style="margin-left:8px;">${r.rank.toFixed(1)}</span>
+        ${!r.correct && r.attempt ? `<span class="your-attempt">you typed: ${escapeHTML(r.attempt.length > 40 ? r.attempt.slice(0,37)+'…' : r.attempt)}</span>` : ''}
+      </div>
+      <div class="chalk-${r.correct ? 'cyan' : 'pink'}">${r.correct ? `+${r.points}` : '—'}</div>
+    </div>
+  `;}).join('');
+  document.getElementById('final-review').innerHTML = reviewHTML;
+  showScreen('screen-results');
+}
+
+// =============================================================
+// INIT
+// =============================================================
+// Built-in definition cache for absurd words (loaded from words.js entries)
+const BUILTIN_DEFS = new Map();
+
+function loadWords() {
+  if (!window.SPELLBEE_WORDS) {
+    const msg = '⚠ words.js did not load.<br><br>If you opened this file by double-clicking, your browser is probably blocking the words file due to security restrictions on local files.<br><br><b>Fix:</b> open a terminal in the folder containing both files and run:<br><code style="background:#1a1410;padding:6px 10px;border-radius:4px;display:inline-block;margin-top:6px;color:#f5e08a;font-size:13px;">python3 -m http.server 8000</code><br><br>Then open <a href="http://localhost:8000/spellbee.html" style="color:#f5e08a;">http://localhost:8000/spellbee.html</a> in your browser.<br><br>(Firefox usually allows the local file load without a server. Chrome and Safari are stricter.)';
+    document.getElementById('word-count-line').textContent = '⚠ words.js failed to load — see below';
+    document.getElementById('word-grid').innerHTML = `<div style="grid-column:1/-1; text-align:left; padding:24px; color:#e8dcc4; background:rgba(218,100,90,0.15); border:1px dashed #d9645a; border-radius:8px; line-height:1.6;">${msg}</div>`;
+    document.getElementById('pagination-row').innerHTML = '';
+    // Disable mode buttons so they don't crash on click
+    document.querySelectorAll('.menu-btn').forEach(b => {
+      b.disabled = true;
+      b.style.opacity = '0.4';
+      b.style.cursor = 'not-allowed';
+      b.onclick = null;
+    });
+    // Buckets are already initialized to empty arrays at module scope.
+    return false;
+  }
+  try {
+    WORDS = window.SPELLBEE_WORDS.map(entry => {
+      if (!Array.isArray(entry) || entry.length < 2 || typeof entry[0] !== 'string') return null;
+      const out = { word: entry[0], rank: Number(entry[1]) || 5.0 };
+      if (entry.length >= 4 && typeof entry[2] === 'string') {
+        out.builtinDef = { pos: entry[3] || '', text: entry[2], source: 'builtin' };
+        BUILTIN_DEFS.set(entry[0], out.builtinDef);
+      }
+      if (entry.length >= 5 && entry[4]) out.showOnly = true;
+      return out;
+    }).filter(Boolean);
+  } catch (e) {
+    console.error('Failed to parse words.js:', e);
+    WORDS = [];
+    return false;
+  }
+  // Reset buckets for all 5 tiers
+  WORDS_BY_BUCKET = { 1: [], 2: [], 3: [], 4: [], 5: [] };
+  for (const w of WORDS) {
+    if (w.showOnly) continue;
+    const b = rankBucket(w.rank);
+    if (WORDS_BY_BUCKET[b]) WORDS_BY_BUCKET[b].push(w);
+  }
+  return true;
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  const wordsLoaded = loadWords();
+  loadCustomWords();
+  if (wordsLoaded) updateModeCounts();
+
+  document.getElementById('filter-row').addEventListener('click', e => {
+    if (e.target.classList.contains('filter-pill')) {
+      document.querySelectorAll('.filter-pill').forEach(p => p.classList.remove('active'));
+      e.target.classList.add('active');
+      currentFilter = e.target.dataset.filter;
+      rebuildFilteredCache();
+      renderWordList();
+    }
+  });
+
+  // Debounced search
+  let searchTimer;
+  document.getElementById('word-search').addEventListener('input', e => {
+    clearTimeout(searchTimer);
+    searchTimer = setTimeout(() => {
+      currentSearch = e.target.value.trim().toLowerCase();
+      rebuildFilteredCache();
+      renderWordList();
+    }, 150);
+  });
+
+  if (wordsLoaded) {
+    rebuildFilteredCache();
+    renderWordList();
+  }
+  initVoices();
+  setupGameInput();
+
+  // Settings handlers
+  const rate = document.getElementById('rate-slider');
+  rate.addEventListener('input', () => {
+    state.rate = parseFloat(rate.value);
+    document.getElementById('rate-val').textContent = state.rate.toFixed(2);
+  });
+  document.getElementById('show-letters').addEventListener('change', e => {
+    state.showLetters = e.target.checked;
+    updateChalkDisplay();
+  });
+  document.getElementById('words-per-round').addEventListener('change', e => {
+    const v = parseInt(e.target.value);
+    if (v >= 5 && v <= 50) {
+      state.wordsPerRound = v;
+      updateModeCounts();
+    }
+  });
+
+  // Custom word modal input
+  const customInput = document.getElementById('custom-word-input');
+  customInput.addEventListener('keydown', e => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      addCustomWord();
+    }
+  });
+});
+</script>
+</body>
+</html>
